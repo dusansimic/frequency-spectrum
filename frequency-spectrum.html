@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Radio Frequency Spectrum Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .form-field {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+
+        .frequency-list {
+            margin-bottom: 30px;
+        }
+
+        .frequency-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.3s;
+        }
+
+        .frequency-item:hover {
+            border-color: #667eea;
+        }
+
+        .frequency-info {
+            flex: 1;
+        }
+
+        .frequency-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .frequency-details {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-wide {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .badge-narrow {
+            background: #28a745;
+            color: white;
+        }
+
+        .chart-container {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .overlap-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+
+        .overlap-warning strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+
+            .form-field {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📡 Mobile Radio Frequency Spectrum Analyzer</h1>
+            <p class="subtitle">Visualize and analyze FM radio frequency overlaps (446.0 - 446.2 MHz)</p>
+        </header>
+
+        <div class="content">
+            <div class="input-section">
+                <h2 style="margin-bottom: 20px;">Add Frequency</h2>
+                <div class="input-group">
+                    <div class="form-field">
+                        <label for="name">Name / Label</label>
+                        <input type="text" id="name" placeholder="Channel 1, Security, etc.">
+                    </div>
+                    <div class="form-field">
+                        <label for="frequency">Frequency (MHz)</label>
+                        <input type="number" id="frequency" step="0.00625" min="400" max="500" placeholder="446.00625">
+                    </div>
+                    <div class="form-field">
+                        <label for="bandwidth">Bandwidth</label>
+                        <select id="bandwidth">
+                            <option value="12.5">Narrowband (12.5 kHz)</option>
+                            <option value="25">Wideband (25 kHz)</option>
+                        </select>
+                    </div>
+                    <div class="form-field" style="display: flex; align-items: flex-end;">
+                        <button onclick="addFrequency()">Add Frequency</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="overlapWarning"></div>
+
+            <div class="frequency-list">
+                <h2 style="margin-bottom: 20px;">Frequency List</h2>
+                <div id="frequencyList"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2 style="margin-bottom: 20px;">Spectrum Visualization</h2>
+                <canvas id="spectrumChart"></canvas>
+            </div>
+
+            <div class="actions">
+                <button onclick="exportJSON()">📥 Export JSON</button>
+                <button onclick="document.getElementById('importFile').click()" class="btn-secondary">📤 Import JSON</button>
+                <button onclick="clearAll()" class="btn-danger">🗑️ Clear All</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importJSON(event)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let frequencies = [];
+
+        // Load data from localStorage on page load
+        window.onload = function() {
+            const saved = localStorage.getItem('frequencies');
+            if (saved) {
+                frequencies = JSON.parse(saved);
+                updateDisplay();
+            }
+        };
+
+        function addFrequency() {
+            const nameInput = document.getElementById('name');
+            const freqInput = document.getElementById('frequency');
+            const bwInput = document.getElementById('bandwidth');
+
+            const name = nameInput.value.trim();
+            const frequency = parseFloat(freqInput.value);
+            const bandwidth = parseFloat(bwInput.value);
+
+            if (!frequency || isNaN(frequency)) {
+                alert('Please enter a valid frequency');
+                return;
+            }
+
+            const newFreq = {
+                id: Date.now(),
+                name: name || `Frequency ${frequencies.length + 1}`,
+                frequency: frequency,
+                bandwidth: bandwidth
+            };
+
+            frequencies.push(newFreq);
+            saveData();
+            updateDisplay();
+
+            // Clear inputs
+            nameInput.value = '';
+            freqInput.value = '';
+        }
+
+        function removeFrequency(id) {
+            frequencies = frequencies.filter(f => f.id !== id);
+            saveData();
+            updateDisplay();
+        }
+
+        function saveData() {
+            localStorage.setItem('frequencies', JSON.stringify(frequencies));
+        }
+
+        function updateDisplay() {
+            updateFrequencyList();
+            drawSpectrum();
+            checkOverlaps();
+        }
+
+        function updateFrequencyList() {
+            const container = document.getElementById('frequencyList');
+
+            if (frequencies.length === 0) {
+                container.innerHTML = '<div class="no-data">No frequencies added yet. Add your first frequency above!</div>';
+                return;
+            }
+
+            // Sort by frequency
+            const sorted = [...frequencies].sort((a, b) => a.frequency - b.frequency);
+
+            container.innerHTML = sorted.map(freq => {
+                const minFreq = (freq.frequency - freq.bandwidth / 2000).toFixed(5);
+                const maxFreq = (freq.frequency + freq.bandwidth / 2000).toFixed(5);
+                const badgeClass = freq.bandwidth === 25 ? 'badge-wide' : 'badge-narrow';
+                const bandwidthLabel = freq.bandwidth === 25 ? 'Wideband' : 'Narrowband';
+                const name = freq.name || 'Unnamed';
+
+                return `
+                    <div class="frequency-item">
+                        <div class="frequency-info">
+                            <div class="frequency-value">
+                                ${name}
+                                <span class="badge ${badgeClass}">${bandwidthLabel}</span>
+                            </div>
+                            <div class="frequency-details">
+                                ${freq.frequency.toFixed(5)} MHz | Range: ${minFreq} - ${maxFreq} MHz (±${freq.bandwidth / 2} kHz)
+                            </div>
+                        </div>
+                        <button class="btn-danger" onclick="removeFrequency(${freq.id})">Remove</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function drawSpectrum() {
+            const canvas = document.getElementById('spectrumChart');
+            const ctx = canvas.getContext('2d');
+
+            if (frequencies.length === 0) {
+                canvas.width = 800;
+                canvas.height = 200;
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No frequencies to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Set canvas size
+            canvas.width = 1000;
+            canvas.height = 400;
+
+            // Calculate frequency range
+            const allFreqs = frequencies.map(f => ({
+                min: f.frequency - f.bandwidth / 2000,
+                max: f.frequency + f.bandwidth / 2000
+            }));
+
+            const minFreq = Math.min(...allFreqs.map(f => f.min));
+            const maxFreq = Math.max(...allFreqs.map(f => f.max));
+            const range = maxFreq - minFreq;
+            const padding = range * 0.1 || 0.01; // Add 10% padding or 0.01 MHz minimum
+
+            const displayMin = minFreq - padding;
+            const displayMax = maxFreq + padding;
+            const displayRange = displayMax - displayMin;
+
+            // Chart dimensions
+            const chartPadding = 60;
+            const chartWidth = canvas.width - 2 * chartPadding;
+            const chartHeight = canvas.height - 2 * chartPadding;
+
+            // Clear canvas
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#e9ecef';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i <= 10; i++) {
+                const x = chartPadding + (chartWidth / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, chartPadding);
+                ctx.lineTo(x, chartPadding + chartHeight);
+                ctx.stroke();
+            }
+
+            // Draw frequency bars
+            const barHeight = 60;
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140'];
+
+            frequencies.forEach((freq, index) => {
+                const minF = freq.frequency - freq.bandwidth / 2000;
+                const maxF = freq.frequency + freq.bandwidth / 2000;
+
+                const x1 = chartPadding + ((minF - displayMin) / displayRange) * chartWidth;
+                const x2 = chartPadding + ((maxF - displayMin) / displayRange) * chartWidth;
+                const width = x2 - x1;
+
+                const y = chartPadding + (index % 5) * (barHeight + 10);
+
+                // Draw bar
+                ctx.fillStyle = colors[index % colors.length];
+                ctx.globalAlpha = 0.7;
+                ctx.fillRect(x1, y, width, barHeight);
+
+                // Draw border
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = colors[index % colors.length];
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x1, y, width, barHeight);
+
+                // Draw center frequency line (subtle)
+                const centerX = chartPadding + ((freq.frequency - displayMin) / displayRange) * chartWidth;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(centerX, y);
+                ctx.lineTo(centerX, y + barHeight);
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset to solid line
+
+                // Label
+                const name = freq.name || 'Unnamed';
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 11px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(name, centerX, y + barHeight / 2 - 8);
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(`${freq.frequency.toFixed(5)} MHz`, centerX, y + barHeight / 2 + 8);
+                ctx.font = '10px Arial';
+                ctx.fillText(`(${freq.bandwidth} kHz)`, centerX, y + barHeight / 2 + 22);
+            });
+
+            // Draw axis
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(chartPadding, chartPadding + chartHeight);
+            ctx.lineTo(chartPadding + chartWidth, chartPadding + chartHeight);
+            ctx.stroke();
+
+            // Draw frequency labels
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+
+            for (let i = 0; i <= 10; i++) {
+                const freq = displayMin + (displayRange / 10) * i;
+                const x = chartPadding + (chartWidth / 10) * i;
+                ctx.fillText(freq.toFixed(5), x, chartPadding + chartHeight + 20);
+            }
+
+            // Axis label
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('Frequency (MHz)', canvas.width / 2, canvas.height - 10);
+        }
+
+        function checkOverlaps() {
+            const container = document.getElementById('overlapWarning');
+            const overlaps = [];
+            const epsilon = 0.000001; // Small value to handle floating point precision
+
+            for (let i = 0; i < frequencies.length; i++) {
+                for (let j = i + 1; j < frequencies.length; j++) {
+                    const f1 = frequencies[i];
+                    const f2 = frequencies[j];
+
+                    const min1 = f1.frequency - f1.bandwidth / 2000;
+                    const max1 = f1.frequency + f1.bandwidth / 2000;
+                    const min2 = f2.frequency - f2.bandwidth / 2000;
+                    const max2 = f2.frequency + f2.bandwidth / 2000;
+
+                    // Check for actual overlap, not just touching edges
+                    // Frequencies overlap if they share actual frequency space
+                    // If max1 == min2 or max2 == min1, they're just touching (adjacent), not overlapping
+                    const actuallyOverlaps = (max1 > min2 + epsilon) && (max2 > min1 + epsilon);
+
+                    if (actuallyOverlaps) {
+                        overlaps.push({
+                            name1: f1.name || 'Unnamed',
+                            name2: f2.name || 'Unnamed',
+                            freq1: f1.frequency,
+                            freq2: f2.frequency,
+                            bw1: f1.bandwidth,
+                            bw2: f2.bandwidth
+                        });
+                    }
+                }
+            }
+
+            if (overlaps.length > 0) {
+                container.innerHTML = `
+                    <div class="overlap-warning">
+                        <strong>⚠️ Frequency Overlaps Detected!</strong>
+                        ${overlaps.map(o =>
+                            `<div>• ${o.name1} (${o.freq1.toFixed(5)} MHz, ${o.bw1} kHz) overlaps with ${o.name2} (${o.freq2.toFixed(5)} MHz, ${o.bw2} kHz)</div>`
+                        ).join('')}
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        function exportJSON() {
+            const dataStr = JSON.stringify(frequencies, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'frequencies.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        frequencies = imported;
+                        saveData();
+                        updateDisplay();
+                        alert('Frequencies imported successfully!');
+                    } else {
+                        alert('Invalid JSON format');
+                    }
+                } catch (error) {
+                    alert('Error reading JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        function clearAll() {
+            if (confirm('Are you sure you want to clear all frequencies?')) {
+                frequencies = [];
+                saveData();
+                updateDisplay();
+            }
+        }
+
+        // Allow Enter key to add frequency
+        document.getElementById('name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addFrequency();
+            }
+        });
+
+        document.getElementById('frequency').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addFrequency();
+            }
+        });
+    </script>
+</body>
+</html>
