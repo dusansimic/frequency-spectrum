@@ -16,7 +16,7 @@ A simple web-based tool for visualizing and analyzing mobile radio frequency spe
 
 Simply open the `index.html` file in your web browser, or visit the live demo:
 
-[Live Demo](https://your-username.github.io/frequency-spectrum/)
+[Live Demo](https://dusansimic.github.io/frequency-spectrum/)
 
 ## How to Use
 
