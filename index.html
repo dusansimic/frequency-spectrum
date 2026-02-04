@@ -423,9 +423,19 @@
                 return;
             }
 
+            // Calculate required dimensions
+            const barHeight = 60;
+            const barSpacing = 10;
+            const chartPadding = 60;
+
+            // Calculate height based on number of frequencies
+            const requiredContentHeight = frequencies.length * (barHeight + barSpacing) - barSpacing;
+            const minCanvasHeight = 300; // Minimum height for small datasets
+            const calculatedHeight = requiredContentHeight + 2 * chartPadding + 40; // +40 for axis labels
+
             // Set canvas size
             canvas.width = 1000;
-            canvas.height = 400;
+            canvas.height = Math.max(minCanvasHeight, calculatedHeight);
 
             // Calculate frequency range
             const allFreqs = frequencies.map(f => {
@@ -447,7 +457,6 @@
             const displayRange = displayMax - displayMin;
 
             // Chart dimensions
-            const chartPadding = 60;
             const chartWidth = canvas.width - 2 * chartPadding;
             const chartHeight = canvas.height - 2 * chartPadding;
 
@@ -468,7 +477,6 @@
             }
 
             // Draw frequency bars
-            const barHeight = 60;
             const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140'];
 
             frequencies.forEach((freq, index) => {
@@ -481,7 +489,7 @@
                 const x2 = chartPadding + ((maxF - displayMin) / displayRange) * chartWidth;
                 const width = x2 - x1;
 
-                const y = chartPadding + (index % 5) * (barHeight + 10);
+                const y = chartPadding + index * (barHeight + barSpacing);
 
                 // Draw bar
                 ctx.fillStyle = colors[index % colors.length];
