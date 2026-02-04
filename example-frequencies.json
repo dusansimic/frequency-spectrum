@@ -1,0 +1,20 @@
+[
+  {
+    "_id": 1738665600000,
+    "name": "PMR Channel 1",
+    "frequency": 446006250,
+    "mode": "NFM"
+  },
+  {
+    "_id": 1738665600001,
+    "name": "PMR Channel 2",
+    "frequency": 446018750,
+    "mode": "NFM"
+  },
+  {
+    "_id": 1738665600002,
+    "name": "PMR Channel 3",
+    "frequency": 446031250,
+    "mode": "FM"
+  }
+]
