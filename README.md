@@ -27,6 +27,35 @@ Simply open the `index.html` file in your web browser, or visit the live demo:
 5. View your frequencies in the list and on the spectrum chart
 6. Export your configuration as JSON or import a previously saved file
 
+## JSON Format
+
+The tool uses the following JSON format for storing and exporting frequencies:
+
+```json
+[
+  {
+    "_id": 1234567890,
+    "name": "Channel 1",
+    "frequency": 446006250,
+    "mode": "NFM"
+  },
+  {
+    "_id": 1234567891,
+    "name": "Security Team",
+    "frequency": 446018750,
+    "mode": "FM"
+  }
+]
+```
+
+**Field descriptions:**
+- `_id`: Unique identifier (integer timestamp)
+- `name`: Display name for the frequency (string)
+- `frequency`: Frequency in Hz as an integer (e.g., 446006250 = 446.00625 MHz)
+- `mode`: Emission mode - `"FM"` for wideband (25 kHz) or `"NFM"` for narrowband (12.5 kHz)
+
+The tool automatically migrates old format files during import.
+
 ## License
 
 BSD 2-Clause License - See [LICENSE](LICENSE) file for details.
