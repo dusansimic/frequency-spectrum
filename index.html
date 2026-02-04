@@ -287,10 +287,42 @@
         window.onload = function() {
             const saved = localStorage.getItem('frequencies');
             if (saved) {
-                frequencies = JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                // Migrate old format to new format if necessary
+                frequencies = parsed.map(freq => {
+                    // Check if it's old format (has 'id' and 'bandwidth' fields)
+                    if (freq.id !== undefined && freq.bandwidth !== undefined) {
+                        return {
+                            _id: freq.id,
+                            name: freq.name || 'Unnamed',
+                            frequency: mhzToHz(freq.frequency),
+                            mode: khzToMode(freq.bandwidth)
+                        };
+                    }
+                    // Already in new format
+                    return freq;
+                });
+                saveData(); // Save migrated data
                 updateDisplay();
             }
         };
+
+        // Helper functions to convert between display (MHz) and storage (Hz) formats
+        function mhzToHz(mhz) {
+            return Math.round(mhz * 1000000);
+        }
+
+        function hzToMhz(hz) {
+            return hz / 1000000;
+        }
+
+        function modeToKhz(mode) {
+            return mode === 'FM' ? 25 : 12.5;
+        }
+
+        function khzToMode(khz) {
+            return khz === 25 ? 'FM' : 'NFM';
+        }
 
         function addFrequency() {
             const nameInput = document.getElementById('name');
@@ -298,19 +330,19 @@
             const bwInput = document.getElementById('bandwidth');
 
             const name = nameInput.value.trim();
-            const frequency = parseFloat(freqInput.value);
-            const bandwidth = parseFloat(bwInput.value);
+            const frequencyMhz = parseFloat(freqInput.value);
+            const bandwidthKhz = parseFloat(bwInput.value);
 
-            if (!frequency || isNaN(frequency)) {
+            if (!frequencyMhz || isNaN(frequencyMhz)) {
                 alert('Please enter a valid frequency');
                 return;
             }
 
             const newFreq = {
-                id: Date.now(),
+                _id: Date.now(),
                 name: name || `Frequency ${frequencies.length + 1}`,
-                frequency: frequency,
-                bandwidth: bandwidth
+                frequency: mhzToHz(frequencyMhz),
+                mode: khzToMode(bandwidthKhz)
             };
 
             frequencies.push(newFreq);
@@ -323,7 +355,7 @@
         }
 
         function removeFrequency(id) {
-            frequencies = frequencies.filter(f => f.id !== id);
+            frequencies = frequencies.filter(f => f._id !== id);
             saveData();
             updateDisplay();
         }
@@ -350,10 +382,12 @@
             const sorted = [...frequencies].sort((a, b) => a.frequency - b.frequency);
 
             container.innerHTML = sorted.map(freq => {
-                const minFreq = (freq.frequency - freq.bandwidth / 2000).toFixed(5);
-                const maxFreq = (freq.frequency + freq.bandwidth / 2000).toFixed(5);
-                const badgeClass = freq.bandwidth === 25 ? 'badge-wide' : 'badge-narrow';
-                const bandwidthLabel = freq.bandwidth === 25 ? 'Wideband' : 'Narrowband';
+                const freqMhz = hzToMhz(freq.frequency);
+                const bandwidthKhz = modeToKhz(freq.mode);
+                const minFreq = (freqMhz - bandwidthKhz / 2000).toFixed(5);
+                const maxFreq = (freqMhz + bandwidthKhz / 2000).toFixed(5);
+                const badgeClass = freq.mode === 'FM' ? 'badge-wide' : 'badge-narrow';
+                const bandwidthLabel = freq.mode === 'FM' ? 'Wideband' : 'Narrowband';
                 const name = freq.name || 'Unnamed';
 
                 return `
@@ -364,10 +398,10 @@
                                 <span class="badge ${badgeClass}">${bandwidthLabel}</span>
                             </div>
                             <div class="frequency-details">
-                                ${freq.frequency.toFixed(5)} MHz | Range: ${minFreq} - ${maxFreq} MHz (±${freq.bandwidth / 2} kHz)
+                                ${freqMhz.toFixed(5)} MHz | Range: ${minFreq} - ${maxFreq} MHz (±${bandwidthKhz / 2} kHz)
                             </div>
                         </div>
-                        <button class="btn-danger" onclick="removeFrequency(${freq.id})">Remove</button>
+                        <button class="btn-danger" onclick="removeFrequency(${freq._id})">Remove</button>
                     </div>
                 `;
             }).join('');
@@ -394,10 +428,14 @@
             canvas.height = 400;
 
             // Calculate frequency range
-            const allFreqs = frequencies.map(f => ({
-                min: f.frequency - f.bandwidth / 2000,
-                max: f.frequency + f.bandwidth / 2000
-            }));
+            const allFreqs = frequencies.map(f => {
+                const freqMhz = hzToMhz(f.frequency);
+                const bandwidthKhz = modeToKhz(f.mode);
+                return {
+                    min: freqMhz - bandwidthKhz / 2000,
+                    max: freqMhz + bandwidthKhz / 2000
+                };
+            });
 
             const minFreq = Math.min(...allFreqs.map(f => f.min));
             const maxFreq = Math.max(...allFreqs.map(f => f.max));
@@ -434,8 +472,10 @@
             const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140'];
 
             frequencies.forEach((freq, index) => {
-                const minF = freq.frequency - freq.bandwidth / 2000;
-                const maxF = freq.frequency + freq.bandwidth / 2000;
+                const freqMhz = hzToMhz(freq.frequency);
+                const bandwidthKhz = modeToKhz(freq.mode);
+                const minF = freqMhz - bandwidthKhz / 2000;
+                const maxF = freqMhz + bandwidthKhz / 2000;
 
                 const x1 = chartPadding + ((minF - displayMin) / displayRange) * chartWidth;
                 const x2 = chartPadding + ((maxF - displayMin) / displayRange) * chartWidth;
@@ -455,7 +495,7 @@
                 ctx.strokeRect(x1, y, width, barHeight);
 
                 // Draw center frequency line (subtle)
-                const centerX = chartPadding + ((freq.frequency - displayMin) / displayRange) * chartWidth;
+                const centerX = chartPadding + ((freqMhz - displayMin) / displayRange) * chartWidth;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
                 ctx.lineWidth = 1;
                 ctx.setLineDash([3, 3]);
@@ -472,9 +512,9 @@
                 ctx.textAlign = 'center';
                 ctx.fillText(name, centerX, y + barHeight / 2 - 8);
                 ctx.font = 'bold 12px Arial';
-                ctx.fillText(`${freq.frequency.toFixed(5)} MHz`, centerX, y + barHeight / 2 + 8);
+                ctx.fillText(`${freqMhz.toFixed(5)} MHz`, centerX, y + barHeight / 2 + 8);
                 ctx.font = '10px Arial';
-                ctx.fillText(`(${freq.bandwidth} kHz)`, centerX, y + barHeight / 2 + 22);
+                ctx.fillText(`(${bandwidthKhz} kHz)`, centerX, y + barHeight / 2 + 22);
             });
 
             // Draw axis
@@ -511,10 +551,15 @@
                     const f1 = frequencies[i];
                     const f2 = frequencies[j];
 
-                    const min1 = f1.frequency - f1.bandwidth / 2000;
-                    const max1 = f1.frequency + f1.bandwidth / 2000;
-                    const min2 = f2.frequency - f2.bandwidth / 2000;
-                    const max2 = f2.frequency + f2.bandwidth / 2000;
+                    const freq1Mhz = hzToMhz(f1.frequency);
+                    const freq2Mhz = hzToMhz(f2.frequency);
+                    const bw1Khz = modeToKhz(f1.mode);
+                    const bw2Khz = modeToKhz(f2.mode);
+
+                    const min1 = freq1Mhz - bw1Khz / 2000;
+                    const max1 = freq1Mhz + bw1Khz / 2000;
+                    const min2 = freq2Mhz - bw2Khz / 2000;
+                    const max2 = freq2Mhz + bw2Khz / 2000;
 
                     // Check for actual overlap, not just touching edges
                     // Frequencies overlap if they share actual frequency space
@@ -525,10 +570,10 @@
                         overlaps.push({
                             name1: f1.name || 'Unnamed',
                             name2: f2.name || 'Unnamed',
-                            freq1: f1.frequency,
-                            freq2: f2.frequency,
-                            bw1: f1.bandwidth,
-                            bw2: f2.bandwidth
+                            freq1: freq1Mhz,
+                            freq2: freq2Mhz,
+                            bw1: bw1Khz,
+                            bw2: bw2Khz
                         });
                     }
                 }
@@ -568,7 +613,20 @@
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (Array.isArray(imported)) {
-                        frequencies = imported;
+                        // Migrate old format to new format if necessary
+                        frequencies = imported.map(freq => {
+                            // Check if it's old format (has 'id' and 'bandwidth' fields)
+                            if (freq.id !== undefined && freq.bandwidth !== undefined) {
+                                return {
+                                    _id: freq.id,
+                                    name: freq.name || 'Unnamed',
+                                    frequency: mhzToHz(freq.frequency),
+                                    mode: khzToMode(freq.bandwidth)
+                                };
+                            }
+                            // Already in new format
+                            return freq;
+                        });
                         saveData();
                         updateDisplay();
                         alert('Frequencies imported successfully!');
