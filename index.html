@@ -418,13 +418,10 @@ function drawSpectrum(){
     ctx.setLineDash([]);
 
     ctx.fillStyle='#000';
-    ctx.font='700 10px "JetBrains Mono",monospace';
+    ctx.font='700 13px "JetBrains Mono",monospace';
     ctx.textAlign='center';
     ctx.textBaseline='middle';
-    const name=(f.name||'Unnamed').toUpperCase();
-    const lbl=`${name}  ${fm.toFixed(5)}  ${modeToKhz(f.mode)}K`;
-    if(width>120)ctx.fillText(lbl,cx,y+barH/2);
-    else if(width>60)ctx.fillText(fm.toFixed(4),cx,y+barH/2);
+    ctx.fillText(String(i+1).padStart(2,'0'),cx,y+barH/2);
   });
 
   ctx.strokeStyle='#6b6b6b';ctx.lineWidth=1;
