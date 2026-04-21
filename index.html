@@ -108,13 +108,14 @@
 
   .freq-row{
     display:grid;
-    grid-template-columns:32px 1fr auto auto;
+    grid-template-columns:32px 1fr auto auto auto;
     align-items:center;
     gap:16px;
     padding:12px 4px;
     border-bottom:1px dashed var(--line);
     font-size:12px;
   }
+  .freq-row .rm{justify-self:end;margin-left:8px}
   .freq-row:last-child{border-bottom:0}
   .freq-row .idx{color:var(--muted);font-size:11px}
   .freq-row .name{color:var(--fg);letter-spacing:.05em}
