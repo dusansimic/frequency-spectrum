@@ -356,7 +356,32 @@ function drawSpectrum(){
 
   const barH=38,barS=10,pad=50;
   const w=1000;
-  const h=Math.max(260,frequencies.length*(barH+barS)-barS+2*pad+30);
+
+  const sorted=[...frequencies].sort((a,b)=>a.frequency-b.frequency);
+
+  // row packing: touching pairs separated vertically; non-touching can share a row.
+  // stepping to next freq: if current bar has no row above, go below; else use row above.
+  const tEps=1e-9;
+  const touches=(a,b)=>{
+    const af=hzToMhz(a.frequency),bf=hzToMhz(b.frequency);
+    const aw=modeToKhz(a.mode)/2000,bw=modeToKhz(b.mode)/2000;
+    return (af+aw)>=(bf-bw)-tEps;
+  };
+  const rows=new Array(sorted.length).fill(0);
+  let r=0,minR=0,maxR=0;
+  for(let i=1;i<sorted.length;i++){
+    const t=touches(sorted[i-1],sorted[i]);
+    const hasAbove=r>minR;
+    if(t){
+      if(!hasAbove){r=r+1;if(r>maxR)maxR=r}
+      else r=r-1;
+    }else if(hasAbove){r=r-1}
+    rows[i]=r;
+    if(r<minR)minR=r;
+  }
+  const numRows=maxR+1;
+
+  const h=Math.max(260,numRows*(barH+barS)-barS+2*pad+30);
   drawSize(w,h);
 
   ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);
@@ -374,14 +399,13 @@ function drawSpectrum(){
   }
 
   const overlap=getOverlapSet();
-  const sorted=[...frequencies].sort((a,b)=>a.frequency-b.frequency);
 
   sorted.forEach((f,i)=>{
     const fm=hzToMhz(f.frequency),bw=modeToKhz(f.mode)/2000;
     const x1=pad+((fm-bw-dMin)/dR)*cw;
     const x2=pad+((fm+bw-dMin)/dR)*cw;
     const width=Math.max(2,x2-x1);
-    const y=pad+i*(barH+barS);
+    const y=pad+rows[i]*(barH+barS);
     const isO=overlap.has(f._id);
 
     ctx.fillStyle=isO?'#ff3b30':'#ff6b00';
